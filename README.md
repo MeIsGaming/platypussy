@@ -1,0 +1,2 @@
+# platypussy
+Self-bot
