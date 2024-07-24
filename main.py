@@ -5,22 +5,15 @@ config = IniConfig("config.ini")
 prefix = config.get("config", "prefix")
 TOKEN = config.get("config", "token")
 
-bot = commands.Bot(command_prefix=prefix)
+bot = commands.Bot(command_prefix=prefix.lower())
 
 @bot.event
 async def on_ready():
     print(f"Successfully logged in as {bot.user.name}.")
 
-@bot.event
-async def on_message(message):
-    if message.author == bot.user:
-        return
-    author = message.author
-    content = message.content
-    print(f"{author}: {content}")
 
-@bot.event
-async def on_member_update(before, after):
-    print(f"{before.nick} -> {after.nick}")
+@bot.command()
+async def foo(ctx, arg, arg2):
+    await ctx.send(arg + arg2)
 
 bot.run(TOKEN)
