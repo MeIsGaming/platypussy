@@ -2,6 +2,7 @@
 
 config.ini
 suggestions.txt
+user_data.db
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
