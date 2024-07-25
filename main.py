@@ -1,6 +1,5 @@
 import discord
 import requests
-import json
 
 from discord.ext import commands
 from iniconfig import IniConfig
