@@ -323,7 +323,7 @@ async def clone(ctx, clone_from: int, clone_to: int) -> None:
                 position=channel.position
                 # overwrites=overwrites_to
             )
-            #await new_channel.edit()
+            # await new_channel.edit()
             print(f"Created Category: {channel.name}")
         except discord.Forbidden:
             print(f"Error While Deleting Category: {channel.name}")
