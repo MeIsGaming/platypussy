@@ -242,8 +242,10 @@ async def removeadmin(ctx,user: discord.User):
         await ctx.send("du hast keine berechtigungen dafür")
 
 @bot.command()
-@commands.has_guild_permissions(timeout=True)
-async def timeout(ctx)
+@commands.has_guild_permissions(moderate_members=True)
+async def timeout(ctx,time,*,user: discord.User,reason):
+    ...
+    #https://discordpy-self.readthedocs.io/en/latest/api.html?highlight=timeout#discord.Member.timeout
     
 
 # Bot starten
