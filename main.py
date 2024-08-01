@@ -289,7 +289,7 @@ async def timeout(ctx, time, *, user: discord.User, reason):
 
 @bot.command(name="clone", help="Clone a server and applies it to another server.")
 async def clone(ctx, clone_from: int, clone_to: int) -> None:
-    await clone_guild(ctx, clone_from, clone_to)
+    await clone_guild(ctx, clone_from, clone_to, bot)
 
 
 # Bot starten

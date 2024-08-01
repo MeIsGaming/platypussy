@@ -3,7 +3,7 @@ from time import sleep
 
 
 # Define a new function to clone a guild
-async def clone_guild(ctx, clone_from: int, clone_to: int):
+async def clone_guild(ctx, clone_from: int, clone_to: int, bot):
     guild_from = bot.get_guild(clone_from)
     if not guild_from:
         await ctx.send("Source server not found.")
