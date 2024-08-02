@@ -1,5 +1,7 @@
 # Own
 
+*.webm
+youtube*
 config.ini
 suggestions.txt
 user_data.db
