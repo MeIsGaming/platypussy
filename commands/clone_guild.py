@@ -1,5 +1,5 @@
 import discord
-from time import sleep
+from functions.arl import arl
 
 
 # Define a new function to clone a guild
@@ -16,7 +16,7 @@ async def clone_guild(ctx, clone_from: int, clone_to: int, bot):
 
     for channel in guild_to.channels:
         try:
-            sleep(0.1)
+            arl(1)
             await channel.delete()
             print(f"Deleted Channel: {channel.name}")
         except discord.Forbidden:
@@ -33,7 +33,7 @@ async def clone_guild(ctx, clone_from: int, clone_to: int, bot):
             # for key, value in channel.overwrites.items():
             # role = discord.utils.get(guild_to.roles, name=key.name)
             # overwrites_to[role] = value
-            sleep(0.1)
+            arl(1)
             new_channel = await guild_to.create_category(
                 name=channel.name,
                 position=channel.position
@@ -66,7 +66,7 @@ async def clone_guild(ctx, clone_from: int, clone_to: int, bot):
                 # role = discord.utils.get(guild_to.roles, name=key.name)
                 # overwrites_to[role] = value
             try:
-                sleep(0.1)
+                arl(1)
                 new_channel = await guild_to.create_text_channel(
                     name=channel_text.name,
                     # overwrites=overwrites_to,
@@ -75,7 +75,7 @@ async def clone_guild(ctx, clone_from: int, clone_to: int, bot):
                     slowmode_delay=channel_text.slowmode_delay,
                     nsfw=channel_text.nsfw)
             except:
-                sleep(0.1)
+                arl(1)
                 new_channel = await guild_to.create_text_channel(
                     name=channel_text.name,
                     # overwrites=overwrites_to,
@@ -110,7 +110,7 @@ async def clone_guild(ctx, clone_from: int, clone_to: int, bot):
                 # role = discord.utils.get(guild_to.roles, name=key.name)
                 # overwrites_to[role] = value
             try:
-                sleep(0.1)
+                arl(1)
                 new_channel = await guild_to.create_voice_channel(
                     name=channel_voice.name,
                     # overwrites=overwrites_to,
@@ -119,13 +119,13 @@ async def clone_guild(ctx, clone_from: int, clone_to: int, bot):
                     user_limit=channel_voice.user_limit,
                 )
             except:
-                sleep(0.1)
+                arl(1)
                 new_channel = await guild_to.create_voice_channel(
                     name=channel_voice.name,
                     # overwrites=overwrites_to,
                     position=channel_voice.position)
             if category is not None:
-                sleep(0.1)
+                arl(1)
                 await new_channel.edit(category=category)
             print(f"Created Voice Channel: {channel_voice.name}")
         except discord.Forbidden:

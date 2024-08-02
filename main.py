@@ -12,7 +12,9 @@ from psutil import cpu_percent, getloadavg, virtual_memory, cpu_count, cpu_freq,
 from petpetgif import petpet as petpetgif
 from GPUtil import getGPUs
 from regex import regex as re
-from functions.clone_guild import clone_guild
+from commands.clone_guild import clone_guild
+from commands.suggest import process_suggestion
+from functions.unmute  import unmute
 
 
 # Konfigurationsdatei laden
@@ -73,7 +75,7 @@ def get_admin_privileges(userid):
 
 
 # Bot-Initialisierung
-bot = commands.Bot(command_prefix=prefix.lower())
+bot = commands.Bot(command_prefix=commands.when_mentioned_or(prefix.lower()))
 
 # Ereignis, wenn der Bot bereit ist
 
@@ -85,47 +87,18 @@ async def on_ready():
 # Funktion, um Vorschläge in eine Textdatei zu speichern
 
 
-def save_suggestion_to_file(suggestion):
-    with open("suggestions.txt", "a") as file:
-        file.write(suggestion + "\n")
+@bot.event
+async def on_voice_state_update(member: discord.Member, before: any, after: any) -> None:
+    await unmute(member, before, after)
 
 
 # Command zum Erfassen von Vorschlägen
 @bot.command()
 async def suggest(ctx, *, suggestion):
-    save_suggestion_to_file(suggestion)
-
-    embed = {
-        "title": "Vorschlag wurde übermittelt:",
-        "description": suggestion,
-        "color": 5814783,  # Farbe des Embeds
-        "author": {
-            "name": ctx.author.name,
-            "icon_url": ctx.author.avatar.url
-        }
-    }
-    data = {
-        "embeds": [embed]
-    }
-    headers = {
-        "Content-Type": "application/json"
-    }
     add_suggestion(ctx.author.name, suggestion)
-    r = requests.post(
-        SUGG_WEBHOOK_URL, data=json.dumps(data), headers=headers)
+    await process_suggestion(ctx, suggestion, SUGG_WEBHOOK_URL)
 
-    if re.match(r"2\d\d", str(r.status_code)):
-        await ctx.author.send("```Danke für deinen Vorschlag!```")
-        await ctx.author.send(f"Dein Vorschlag \" *{suggestion}* \" wurde erfolgreich übermittelt. Bei genaueren Nachfragen etc wende dich bitte an **<@871497360658800640>** oder **<@1227610698373140553>**")
-    elif re.match(r"4\d\d", str(r.status_code)):
-        print(
-            f"Error sending suggestion. Client error: {r.status_code} - {r.text}")
-    elif re.match(r"5\d\d", str(r.status_code)):
-        print(
-            f"Error sending suggestion. Server error: {r.status_code} - {r.text}")
-    else:
-        print(
-            f"Error sending suggestion: {r.status_code} - {r.text}")
+
 
 # Event for finding all nitro gift links
 
@@ -139,6 +112,7 @@ async def on_message(message):
             f.close()
     else:
         await bot.process_commands(message)
+
 
 # Command (ping)
 
