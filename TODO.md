@@ -1,0 +1,3 @@
+- refactor code
+- abuseip-api to config.ini
+-  change/add virustotal

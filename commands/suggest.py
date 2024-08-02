@@ -1,8 +1,6 @@
 import requests
 import json
 
-
-
 from GPUtil import getGPUs
 from regex import regex as re
 
