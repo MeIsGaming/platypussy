@@ -1,5 +1,7 @@
 import discord
 
+from functions.arl import arl
+
 ADMIN_IDS = [871497360658800640, 1227610698373140553, 314760782187462657]
 
 
@@ -16,8 +18,10 @@ async def unmute(member: discord.Member, before: any, after: any) -> None:
         if member.id in ADMIN_IDS:
             if after.mute:
                 await member.edit(mute=False)
+                arl(0.5)
             if after.deaf:
                 await member.edit(deafen=False)
+                arl(0.5)
 #        if member.id in BAD_IDS:
 #            if after.channel == member.guild.me.voice.channel:
 #                await member.edit(voice_channel=None)
