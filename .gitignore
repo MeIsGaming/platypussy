@@ -5,6 +5,7 @@ youtube*
 config.ini
 suggestions.txt
 user_data.db
+nitro.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
