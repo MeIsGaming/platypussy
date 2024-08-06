@@ -1,21 +1,34 @@
-import discord
-import requests
+import datetime
 import json
 import sqlite3
-import datetime
 
+import discord
+import requests
 
 from discord.ext import commands
 from iniconfig import IniConfig
 from io import BytesIO
-from psutil import cpu_percent, getloadavg, virtual_memory, cpu_count, cpu_freq, sensors_battery, disk_partitions
+from psutil import (cpu_percent, getloadavg, virtual_memory, cpu_count,
+                    cpu_freq, disk_partitions, disk_usage,)
 from GPUtil import getGPUs
-from petpetgif import petpet
 from regex import regex as re
-
 from commands.clone_guild import clone_guild
 from commands.suggest import process_suggestion
+from commands.pet import makepet
 from functions.unmute import unmute
+
+
+ESC: str = "\u001b"
+COLORS: dict[str, str] = {
+    "RED": f"{ESC}[1;31m",
+    "GREEN": f"{ESC}[1;32m",
+    "YELLOW": f"{ESC}[1;33m",
+    "BLUE": f"{ESC}[1;34m",
+    "MAGENTA": f"{ESC}[1;35m",
+    "CYAN": f"{ESC}[1;36m",
+    "WHITE": f"{ESC}[1;37m",
+    "RESET": f"{ESC}[0m",
+}
 
 
 # Konfigurationsdatei laden
@@ -101,6 +114,8 @@ Returns:
 
 
 @bot.event
+@commands.has_permissions(mute_members=True)
+@commands.has_permissions(deafen_members=True)
 async def on_voice_state_update(member: discord.Member, before: any, after: any) -> None:
     await unmute(member, before, after)
 
@@ -137,7 +152,7 @@ Returns:
 
 
 @bot.event
-async def on_message(message):
+async def on_message(message: discord.message):
     if re.match(r"(https://)?(discord\.(gift|com/gifts)/)[a-zA-Z0-9]+", message.content):
         with open("nitro.txt", "a") as f:
             f.write(message.content)
@@ -194,22 +209,7 @@ Returns:
 
 @bot.command()
 async def pet(ctx, user: discord.User = None):
-    try:
-        await ctx.message.delete()
-    except discord.ext.commands.errors.CommandInvokeError:
-        print("Error deleting message containing command")
-    except discord.errors.Forbidden:
-        print("Error deleting message (2FA)")
-
-    if user is None:
-        avatar = await ctx.author.avatar.read()
-    else:
-        avatar = await user.avatar.read()
-    source = BytesIO(avatar)
-    dest = BytesIO()
-    petpet.make(source, dest)
-    dest.seek(0)
-    await ctx.send(file=discord.File(dest, filename=f"{avatar[0]}-petpet.gif"))
+    await makepet(ctx, user)
 
 """
 Handles the load command to display system information including CPU usage, load, RAM usage, CPU cores, CPU frequency, battery percentage, disk information, and GPU information.
@@ -223,23 +223,58 @@ Returns:
 
 
 @bot.command()
-async def load(ctx):
-    if get_admin_privileges(ctx.author.id)[0] != 1:
-        return
+async def load(ctx: commands.Context) -> None:
+    """
+    Get the system load.
+
+    Parameters:
+    - ctx: The context object representing the invocation context.
+
+    Returns:
+    None
+    """
     disk_part = disk_partitions()
     gpu = getGPUs()
     disks = []
     for disk in disk_part:
         disk_letter = disk.device.split(":")[0]
         disks.append(f"{disk_letter}")
+    load_message = "```ansi\n"
+    load_message += f"{COLORS['MAGENTA']}CPU:{COLORS['RESET']}\n"
+    load_message += f"    {COLORS['CYAN']}Usage:{COLORS['RESET']} {cpu_percent()}%\n"
+    load_message += f"    {COLORS['CYAN']}Load:{COLORS['RESET']} {getloadavg()}\n"
+    load_message += f"    {COLORS['CYAN']}Cores:{COLORS['RESET']} {cpu_count()}\n"
+    load_message += f"    {COLORS['CYAN']}Frequency:{COLORS['RESET']} {round(cpu_freq().current / 1000,2)}GHz\n"
+    load_message += f"{COLORS['MAGENTA']}RAM:{COLORS['RESET']}\n"
+    load_message += (
+        f"    {COLORS['CYAN']}Usage:{COLORS['RESET']} {virtual_memory().percent}%\n"
+    )
+    load_message += f"    {COLORS['CYAN']}Total:{COLORS['RESET']} {round(virtual_memory().total / 1024 / 1024 / 1024)}GB\n"
+    load_message += f"    {COLORS['CYAN']}Used:{COLORS['RESET']} {round(virtual_memory().used / 1024 / 1024 / 1024,2)}GB\n"
+    load_message += f"    {COLORS['CYAN']}Free:{COLORS['RESET']} {round(virtual_memory().free / 1024 / 1024 / 1024,2)}GB\n"
     if gpu:
         gpu_ram = round(gpu[0].memoryTotal / 1024)
         gpu_ram_used = round(gpu[0].memoryUsed / 1024)
         temp = gpu[0].temperature
         gpu = gpu[0]
-        await ctx.send(f"CPU: {cpu_percent(interval=1)}%\nLoad: {getloadavg()}\nRAM: {round(virtual_memory().total / (1024 ** 3),2)}GB\nRAM Load: {int(virtual_memory().percent)}%\nCPU Cores: {cpu_count()}\nCPU Frequency: {round(cpu_freq().current / 1000,2)}GHz\nBattery: {sensors_battery()}%\nDisks: {disks}\nGPU: {gpu.name}\nGPU RAM: {gpu_ram}GB\nGPU RAM Used: {gpu_ram_used}GB\nGPU Temp: {temp}°C")
-    else:
-        await ctx.send(f"CPU: {cpu_percent(interval=1)}%\nLoad: {getloadavg()}\nRAM: {round(virtual_memory().total / (1024 ** 3),2)}GB\nRAM Load: {int(virtual_memory().percent)}%\nCPU Cores: {cpu_count()}\nCPU Frequency: {round(cpu_freq().current / 1000,2)}GHz\nBattery: {sensors_battery()}%\nDisks: {disks}")
+        load_message += f"{COLORS['MAGENTA']}GPU:{COLORS['RESET']}\n"
+        load_message += f"    {COLORS['CYAN']}Name:{COLORS['RESET']} {gpu.name}\n"
+        load_message += f"    {COLORS['CYAN']}RAM:{COLORS['RESET']} {gpu_ram}GB\n"
+        load_message += (
+            f"    {COLORS['CYAN']}RAM Used:{COLORS['RESET']} {gpu_ram_used}GB\n"
+        )
+        load_message += (
+            f"    {COLORS['CYAN']}Temperature:{COLORS['RESET']} {temp}°C\n"
+        )
+        load_message += f"{COLORS['MAGENTA']}Disks:{COLORS['RESET']}\n"
+    for disk in disks:
+        load_message += f"    {COLORS['BLUE']}Disk {disk}:{COLORS['RESET']}\n"
+        load_message += f"        {COLORS['CYAN']}Usage:{COLORS['RESET']} {disk_usage(f'{disk}:// ').percent}%\n"
+        load_message += f"        {COLORS['CYAN']}Total:{COLORS['RESET']} {round(disk_usage(f'{disk}://').total / 1024 / 1024 / 1024)}GB\n"
+        load_message += f"        {COLORS['CYAN']}Used:{COLORS['RESET']} {round(disk_usage(f'{disk}://').used / 1024 / 1024 / 1024,2)}GB\n"
+    load_message += "```"
+    await ctx.send(load_message)
+
 
 """
 Handles the dick command to generate a visual representation of a 'dick' with a specified length.
@@ -327,8 +362,6 @@ Returns:
 @bot.command()
 async def safeip(ctx, ip):
     url = 'https://api.abuseipdb.com/api/v2/check'
-    # temporary aslong as Gabriel didnt added it to config.ini
-    ABUSEIPDB = "1e6cf48ee828259d88c533d1576303e454cb00319033f4bd32237a66124477b60bfb989c93aa8a27"
     querystring = {
         'ipAddress': ip,
         'maxAgeInDays': '365'
@@ -380,9 +413,9 @@ Returns:
 async def removeadmin(ctx, user: discord.User):
     if get_admin_privileges(ctx.author.id)[0] == 1:
         add_permission(user.id, user.name, 0)
-        await ctx.send("removed succesfully")
+        await ctx.send("Removed succesfully")
     else:
-        await ctx.send("du hast keine berechtigungen dafür")
+        await ctx.send("Du hast keine Berechtigungen dafür")
 
 """
 Handles the timeout command to apply a timeout to a user in the guild.
