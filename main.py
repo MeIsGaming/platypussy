@@ -7,7 +7,6 @@ import requests
 
 from discord.ext import commands
 from iniconfig import IniConfig
-from io import BytesIO
 from psutil import (cpu_percent, getloadavg, virtual_memory, cpu_count,
                     cpu_freq, disk_partitions, disk_usage,)
 from GPUtil import getGPUs
@@ -16,6 +15,10 @@ from commands.clone_guild import clone_guild
 from commands.suggest import process_suggestion
 from commands.pet import makepet
 from functions.unmute import unmute
+from functions.stalker import (
+    smessage, smessage_edit, smessage_delete,
+    # svoice, sguilds,
+)
 
 
 ESC: str = "\u001b"
@@ -40,6 +43,7 @@ prefix = config.get("config", "prefix")
 TOKEN = config.get("config", "token")
 SUGG_WEBHOOK_URL = config.get("config", "sugg_webhook_url")
 ABUSEIPDB = config.get("config", "abuseipdb_key")
+STALKUSERS = config.get("config", "stalkusers")
 
 # Database-Initialisierung
 c.execute('''
@@ -88,6 +92,16 @@ def get_admin_privileges(userid):
     return c.fetchone()
 
 
+def get_owner():
+    guild_id: int = 1009281888118120528
+    guild: discord.Guild = bot.get_guild(guild_id)
+    if guild is not None:
+        owner = guild.owner
+        return owner
+    else:
+        print(f"Couldn't find guild/owner!!!  {guild}")
+
+
 # Bot-Initialisierung
 bot = commands.Bot(command_prefix=commands.when_mentioned_or(prefix.lower()))
 
@@ -97,6 +111,9 @@ bot = commands.Bot(command_prefix=commands.when_mentioned_or(prefix.lower()))
 @bot.event
 async def on_ready():
     print(f"Successfully logged in as {bot.user.name}.")
+    print(f"Bot-Owner: {get_owner().name}")
+    return get_owner()
+
 
 # Funktion, um Vorschläge in eine Textdatei zu speichern
 
@@ -133,7 +150,7 @@ Returns:
 
 @bot.command()
 async def suggest(ctx, *, suggestion):
-    add_suggestion(ctx.author.name, suggestion)
+    await add_suggestion(ctx.author.name, suggestion)
     await process_suggestion(ctx, suggestion, SUGG_WEBHOOK_URL)
 
 
@@ -160,7 +177,17 @@ async def on_message(message: discord.message):
             f.close()
     else:
         await bot.process_commands(message)
+    await smessage(get_owner(), STALKUSERS, message)
 
+
+@bot.event
+async def on_message_edit(before, after):
+    await smessage_edit(get_owner(), STALKUSERS, before, after)
+
+
+@bot.event
+async def on_message_delete(message):
+    await smessage_delete(get_owner(), STALKUSERS, message)
 
 """
 Handles the ping command to measure the bot's latency and respond with a 'Pong!' message.

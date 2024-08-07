@@ -1,3 +1,3 @@
 - refactor code
-- abuseip-api to config.ini
--  change/add virustotal
+- change/add virustotal
+- add command to reload stlk_ids (and maybe add)

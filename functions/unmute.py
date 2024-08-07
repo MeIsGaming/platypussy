@@ -20,24 +20,31 @@ async def unmute(member: discord.Member, before: any, after: any) -> None:
 
         if member.id in ADMIN_IDS:
             NAME = member.name
-            NICK = member.nick
-            if NICK is None:
-                NICK = NAME
+            NICK = member.nick or member.name
+
             CHANNEL = member.voice.channel.name
             SERVER = member.voice.channel.guild
             SERVERNAME = SERVER.name
-            TIMESTAMP = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            TIMESTAMP = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"   "
             if after.mute:
                 await member.edit(mute=False)
                 print(
-                    f"{TIMESTAMP}   Unmuted {NICK}({NAME}) in {CHANNEL} on {SERVERNAME}")
+                    f"{TIMESTAMP}Unmuted {NICK}({NAME}) in {CHANNEL} on {SERVERNAME}")
                 arl(0.5)
 
             if after.deaf:
                 await member.edit(deafen=False)
                 print(
-                    f"{TIMESTAMP}   Undeafened {NICK}({NAME}) in {CHANNEL} on {SERVERNAME}")
+                    f"{TIMESTAMP}Undeafened {NICK}({NAME}) in {CHANNEL} on {SERVERNAME}")
                 arl(0.5)
+
+            if before.channel is None:
+                print(
+                    f"{TIMESTAMP}{NICK} joined {after.channel.name} on {after.channel.guild.name}")
+
+            if after is None:
+                print(
+                    f"{TIMESTAMP}{NICK} left {before.channel.name} on {before.channel.guild.name}")
 
 
 #        if member.id in BAD_IDS:
