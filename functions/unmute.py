@@ -19,32 +19,40 @@ async def unmute(member: discord.Member, before: any, after: any) -> None:
     try:
 
         if member.id in ADMIN_IDS:
-            NAME = member.name
-            NICK = member.nick or member.name
+            if member is None:
+                print("member is None!")
+            else:
+                NAME = member.name
+                NICK = member.nick or member.name
 
-            CHANNEL = member.voice.channel.name
-            SERVER = member.voice.channel.guild
-            SERVERNAME = SERVER.name
+            BEFORE_CHANNEL = before.channel.name
+            AFTER_CHANNEL = after.channel.name
+            BEFORE_GUILD = before.channel.guild.name
+            AFTER_GUILD = after.channel.guild.name
+
             TIMESTAMP = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"   "
+
             if after.mute:
                 await member.edit(mute=False)
                 print(
-                    f"{TIMESTAMP}Unmuted {NICK}({NAME}) in {CHANNEL} on {SERVERNAME}")
-                arl(0.5)
+                    f"{TIMESTAMP}Unmuted {str(NICK)}({str(NAME)}) in {str(AFTER_CHANNEL)} on {str(AFTER_GUILD)}")
+                arl(0.25)
 
             if after.deaf:
                 await member.edit(deafen=False)
                 print(
-                    f"{TIMESTAMP}Undeafened {NICK}({NAME}) in {CHANNEL} on {SERVERNAME}")
-                arl(0.5)
+                    f"{TIMESTAMP}Undeafened {str(NICK)}({str(NAME)}) in {str(AFTER_CHANNEL)} on {str(AFTER_GUILD)}")
+                arl(0.25)
 
             if before.channel is None:
                 print(
-                    f"{TIMESTAMP}{NICK} joined {after.channel.name} on {after.channel.guild.name}")
-
-            if after is None:
+                    f"{TIMESTAMP}{str(NICK)} joined {str(AFTER_CHANNEL)} on {str(AFTER_GUILD)}")
+            elif after is None:
                 print(
-                    f"{TIMESTAMP}{NICK} left {before.channel.name} on {before.channel.guild.name}")
+                    f"{TIMESTAMP}{str(NICK)} left {str(BEFORE_CHANNEL)} on {str(BEFORE_GUILD)}")
+            elif before.channel is not after.channel:
+                print(
+                    f"{TIMESTAMP}{str(NICK)} left {str(BEFORE_CHANNEL)}({str(BEFORE_GUILD)}) and joined {str(AFTER_CHANNEL)}({str(AFTER_GUILD)})")
 
 
 #        if member.id in BAD_IDS:

@@ -43,7 +43,8 @@ prefix = config.get("config", "prefix")
 TOKEN = config.get("config", "token")
 SUGG_WEBHOOK_URL = config.get("config", "sugg_webhook_url")
 ABUSEIPDB = config.get("config", "abuseipdb_key")
-STALKUSERS = config.get("config", "stalkusers")
+STALKUSERS = config.get("config", "stalk_users")
+BANNED_GUILDS = config.get("config", "banned_guilds")
 
 # Database-Initialisierung
 c.execute('''
@@ -150,8 +151,10 @@ Returns:
 
 @bot.command()
 async def suggest(ctx, *, suggestion):
-    await add_suggestion(ctx.author.name, suggestion)
-    await process_suggestion(ctx, suggestion, SUGG_WEBHOOK_URL)
+
+    if str(ctx.guild.id) not in BANNED_GUILDS:
+        await add_suggestion(ctx.author.name, suggestion)
+        await process_suggestion(ctx, suggestion, SUGG_WEBHOOK_URL)
 
 
 """
@@ -169,14 +172,18 @@ Returns:
 
 
 @bot.event
-async def on_message(message: discord.message):
+async def on_message(message: discord.Message):
     if re.match(r"(https://)?(discord\.(gift|com/gifts)/)[a-zA-Z0-9]+", message.content):
         with open("nitro.txt", "a") as f:
             f.write(message.content)
             f.truncate()
             f.close()
-    else:
-        await bot.process_commands(message)
+
+    elif str(message.channel.guild.id) not in BANNED_GUILDS:
+        if message.channel.guild.id is None:
+            print(message)
+        else:
+            await bot.process_commands(message)
     await smessage(get_owner(), STALKUSERS, message)
 
 
@@ -202,8 +209,10 @@ Returns:
 
 @bot.command()
 async def ping(ctx):
-    calc = round(bot.latency * 1000, 1)
-    await ctx.send(f"Pong! {calc}ms")
+    if str(ctx.guild.id) not in BANNED_GUILDS:
+        calc = round(bot.latency * 1000, 1)
+        await ctx.send(f"Pong! {calc}ms")
+
 
 """
 Handles the test command to display a test message with two arguments.
@@ -220,7 +229,8 @@ Returns:
 
 @bot.command()
 async def test(ctx, arg, arg2):
-    await ctx.send(f"Test: {arg} {arg2}")
+    if str(ctx.guild.id) not in BANNED_GUILDS:
+        await ctx.send(f"Test: {arg} {arg2}")
 
 """
 Handles the pet command to create a 'petpet' animation of a user's avatar.
@@ -236,7 +246,8 @@ Returns:
 
 @bot.command()
 async def pet(ctx, user: discord.User = None):
-    await makepet(ctx, user)
+    if str(ctx.guild.id) not in BANNED_GUILDS:
+        await makepet(ctx, user)
 
 """
 Handles the load command to display system information including CPU usage, load, RAM usage, CPU cores, CPU frequency, battery percentage, disk information, and GPU information.
@@ -300,7 +311,9 @@ async def load(ctx: commands.Context) -> None:
         load_message += f"        {COLORS['CYAN']}Total:{COLORS['RESET']} {round(disk_usage(f'{disk}://').total / 1024 / 1024 / 1024)}GB\n"
         load_message += f"        {COLORS['CYAN']}Used:{COLORS['RESET']} {round(disk_usage(f'{disk}://').used / 1024 / 1024 / 1024,2)}GB\n"
     load_message += "```"
-    await ctx.send(load_message)
+    if str(ctx.guild.id) not in BANNED_GUILDS:
+        async with ctx.typing():
+            await ctx.send(load_message)
 
 
 """
