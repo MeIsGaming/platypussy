@@ -1,5 +1,6 @@
-import discord
-import datetime
+from discord import Member
+
+from datetime import datetime
 
 from functions.arl import arl
 
@@ -7,7 +8,7 @@ ADMIN_IDS = [871497360658800640, 1227610698373140553,
              314760782187462657, 671036411343798292]
 
 
-async def unmute(member: discord.Member, before: any, after: any) -> None:
+async def unmute(member: Member, before: any, after: any) -> None:
     """
     Event handler for when a member's voice state is updated.
 
@@ -30,7 +31,7 @@ async def unmute(member: discord.Member, before: any, after: any) -> None:
             BEFORE_GUILD = before.channel.guild.name
             AFTER_GUILD = after.channel.guild.name
 
-            TIMESTAMP = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"   "
+            TIMESTAMP = datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"   "
 
             if after.mute:
                 await member.edit(mute=False)

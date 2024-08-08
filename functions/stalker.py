@@ -28,8 +28,11 @@ async def extr_emojis(message):
     emojis = re.findall(EMOJI_REGEX, message.content)
 
     for emoji in emojis:
-        name = emoji[1]
-        ext = "gif" if emoji[0] else "png"
-        image_url = f"https://cdn.discordapp.com/emojis/{emoji[2]}.{ext}?size=96&quality=lossless"
+        get_url(emoji)
 
     return emojis
+
+def get_url(emoji):
+    #name = emoji[1]
+    ext = "gif" if emoji[0] else "png"
+    return f"https://cdn.discordapp.com/emojis/{emoji[2]}.{ext}?size=96&quality=lossless"
