@@ -387,7 +387,7 @@ async def meow(ctx, *, text=None):
 
 """
 Handles the safeip command to check the abuse confidence score and Tor status of an IP address using the 'abuseipdb' API.
-TODO:move api key+addvirustotal
+TODO:addvirustotal
 
 Args:
     ctx: The context of the command.
