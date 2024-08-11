@@ -2,10 +2,13 @@ import datetime
 import json
 import sqlite3
 
+import asyncio
+
 import discord
 import requests
 
 from discord.ext import commands
+from collections import defaultdict
 from iniconfig import IniConfig
 from psutil import (cpu_percent, getloadavg, virtual_memory, cpu_count,
                     cpu_freq, disk_partitions, disk_usage,)
@@ -15,10 +18,12 @@ from commands.clone_guild import clone_guild
 from commands.suggest import process_suggestion
 from commands.pet import makepet
 from functions.unmute import unmute
+from functions.arl import arl
 from functions.stalker import (
     smessage, smessage_edit, smessage_delete,
     # svoice, sguilds,
 )
+from functions.ddc import decrement_dick_counter
 
 
 ESC: str = "\u001b"
@@ -102,6 +107,9 @@ def get_owner():
     else:
         print(f"Couldn't find guild/owner!!!  {guild}")
 
+
+# Initialize a counter to track the number of "dick" requests per user
+dick_counter = defaultdict(int)
 
 # Bot-Initialisierung
 bot = commands.Bot(command_prefix=commands.when_mentioned_or(prefix.lower()))
@@ -330,8 +338,27 @@ Returns:
 
 @bot.command()
 async def dick(ctx, arg: int):
-    shaft = "=" * arg
-    await ctx.send(f"8{shaft}B")
+    user_id = ctx.author.id
+    dick_count = dick_counter.get(user_id, 0)
+    dick_counter[user_id] = dick_count + 1
+
+    if arg > 500:
+        msg = "Übertreib nd, solange is nd mal der von deiner mum UwU\nDein Cöck, du kek:[||uwu||](https://cdn.discordapp.com/emojis/1272257395451756645.webp?size=96&quality=lossless)\n-# 8==B"
+        arg = 20
+    else:
+        shaft = "=" * arg
+        msg = f"8{shaft}B"
+
+    if dick_count >= 3:
+        msg = "Interessant,dass du so viele Cöcks sehen willst 👀...\n[Why are you gay?](https://media1.tenor.com/m/RMP0AGC2sLIAAAAC/why-are-you-gay.gif) \nHier deiner, damit du nd traurig bist:\n```8=3```\n-# Vergiss nd durchzuatmen und trink genug! (Bitte warte kurz, bin überfordert)"
+
+    await ctx.send(msg)
+
+    # Start a background task to decrement the counter after a specified time
+    asyncio.create_task(decrement_dick_counter(user_id, dick_counter))
+
+    await arl(0, 2)
+
 
 """
 Handles the cat command to display a random cat image from the 'cataas' API.
