@@ -2,7 +2,7 @@ from discord import Member
 
 from datetime import datetime
 
-from functions.arl import arl
+from platy_sec.sec_main import arl
 
 ADMIN_IDS = [871497360658800640, 1227610698373140553,
              314760782187462657, 671036411343798292]

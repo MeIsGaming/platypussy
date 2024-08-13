@@ -1,29 +1,35 @@
-import datetime
+import asyncio
 import json
 import sqlite3
-
-import asyncio
+import datetime
+import logging
 
 import discord
 import requests
 
 from discord.ext import commands
+
 from collections import defaultdict
 from iniconfig import IniConfig
-from psutil import (cpu_percent, getloadavg, virtual_memory, cpu_count,
-                    cpu_freq, disk_partitions, disk_usage,)
+from psutil import (
+    cpu_percent, getloadavg, virtual_memory, cpu_count,
+    cpu_freq, disk_partitions, disk_usage,
+)
 from GPUtil import getGPUs
 from regex import regex as re
+
+import platy_sec.sec_main as sec
+from platy_sec.stalker import (
+    smessage, smessage_edit, smessage_delete,
+)
+
+from commands.commonc import makepet, handle_dick
 from commands.clone_guild import clone_guild
 from commands.suggest import process_suggestion
-from commands.pet import makepet
+from commands.cat import handle_cat_command
+
 from functions.unmute import unmute
-from functions.arl import arl
-from functions.stalker import (
-    smessage, smessage_edit, smessage_delete,
-    # svoice, sguilds,
-)
-from functions.ddc import decrement_dick_counter
+from functions.commonf import handle_ping
 
 
 ESC: str = "\u001b"
@@ -102,10 +108,13 @@ def get_owner():
     guild_id: int = 1009281888118120528
     guild: discord.Guild = bot.get_guild(guild_id)
     if guild is not None:
-        owner = guild.owner
-        return owner
+        return guild.owner
     else:
         print(f"Couldn't find guild/owner!!!  {guild}")
+
+
+def log(logmsg):
+    print(logmsg)
 
 
 # Initialize a counter to track the number of "dick" requests per user
@@ -119,9 +128,23 @@ bot = commands.Bot(command_prefix=commands.when_mentioned_or(prefix.lower()))
 
 @bot.event
 async def on_ready():
-    print(f"Successfully logged in as {bot.user.name}.")
-    print(f"Bot-Owner: {get_owner().name}")
-    return get_owner()
+    log(f"""Logged in as {bot.user.name}{f'#{bot.user.discriminator}' if bot.user.discriminator != "0" else ""}
+    - ID: {bot.user.id}
+    - Prefix: {prefix}
+    - Created at {bot.user.created_at.date()}
+    - Servers: {len(bot.guilds)}
+    - MFA: {bot.user.mfa_enabled}
+    - Verified: {bot.user.verified}
+    - badges = {[badge[0] for badge in bot.user.public_flags.all()]}""")
+
+    owner = None
+    owner = get_owner()
+
+    log(f"""Bot-Owner: {owner.name}{f'#{owner.discriminator}' if owner.discriminator != "0" else ""}
+    - ID: {owner.id}
+    - Created at {owner.created_at.date()}
+    - badges = {[badge[0] for badge in owner.public_flags.all()]}""")
+    return owner
 
 
 # Funktion, um Vorschläge in eine Textdatei zu speichern
@@ -204,41 +227,11 @@ async def on_message_edit(before, after):
 async def on_message_delete(message):
     await smessage_delete(get_owner(), STALKUSERS, message)
 
-"""
-Handles the ping command to measure the bot's latency and respond with a 'Pong!' message.
 
-Args:
-    ctx: The context of the command.
-
-Returns:
-    None
-"""
-
-
-@bot.command()
+@bot.command(name="ping")
 async def ping(ctx):
-    if str(ctx.guild.id) not in BANNED_GUILDS:
-        calc = round(bot.latency * 1000, 1)
-        await ctx.send(f"Pong! {calc}ms")
+    await handle_ping(ctx, bot, BANNED_GUILDS)
 
-
-"""
-Handles the test command to display a test message with two arguments.
-
-Args:
-    ctx: The context of the command.
-    arg: The first argument.
-    arg2: The second argument.
-
-Returns:
-    None
-"""
-
-
-@bot.command()
-async def test(ctx, arg, arg2):
-    if str(ctx.guild.id) not in BANNED_GUILDS:
-        await ctx.send(f"Test: {arg} {arg2}")
 
 """
 Handles the pet command to create a 'petpet' animation of a user's avatar.
@@ -252,10 +245,9 @@ Returns:
 """
 
 
-@bot.command()
+@bot.command(name="pet", aliases=["pat", "patpat", "petpet"])
 async def pet(ctx, user: discord.User = None):
-    if str(ctx.guild.id) not in BANNED_GUILDS:
-        await makepet(ctx, user)
+    await makepet(ctx, user)
 
 """
 Handles the load command to display system information including CPU usage, load, RAM usage, CPU cores, CPU frequency, battery percentage, disk information, and GPU information.
@@ -324,93 +316,26 @@ async def load(ctx: commands.Context) -> None:
             await ctx.send(load_message)
 
 
-"""
-Handles the dick command to generate a visual representation of a 'dick' with a specified length.
-
-Args:
-    ctx: The context of the command.
-    arg: The length of the 'dick' represented by the number of '=' characters.
-
-Returns:
-    None
-"""
-
-
 @bot.command()
 async def dick(ctx, arg: int):
-    user_id = ctx.author.id
-    dick_count = dick_counter.get(user_id, 0)
-    dick_counter[user_id] = dick_count + 1
-
-    if arg > 500:
-        msg = "Übertreib nd, solange is nd mal der von deiner mum UwU\nDein Cöck, du kek:[||uwu||](https://cdn.discordapp.com/emojis/1272257395451756645.webp?size=96&quality=lossless)\n-# 8==B"
-        arg = 20
-    else:
-        shaft = "=" * arg
-        msg = f"8{shaft}B"
-
-    if dick_count >= 3:
-        msg = "Interessant,dass du so viele Cöcks sehen willst 👀...\n[Why are you gay?](https://media1.tenor.com/m/RMP0AGC2sLIAAAAC/why-are-you-gay.gif) \nHier deiner, damit du nd traurig bist:\n```8=3```\n-# Vergiss nd durchzuatmen und trink genug! (Bitte warte kurz, bin überfordert)"
-
-    await ctx.send(msg)
-
-    # Start a background task to decrement the counter after a specified time
-    asyncio.create_task(decrement_dick_counter(user_id, dick_counter))
-
-    await arl(0, 2)
+    await handle_dick(ctx, arg, dick_counter)
 
 
-"""
-Handles the cat command to display a random cat image from the 'cataas' API.
-
-Args:
-    ctx: The context of the command.
-
-Returns:
-    None
-"""
-
-
+#
+#
 @bot.command()
 async def cat(ctx):
-    url = "https://cataas.com/cat?type=medium"
-    await ctx.send(url)
-
-"""
-Handles the cif command to display a random cat GIF from the 'cataas' API.
-
-Args:
-    ctx: The context of the command.
-
-Returns:
-    None
-"""
+    await handle_cat_command(ctx, "cat")
 
 
 @bot.command()
 async def cif(ctx):
-    url = "https://cataas.com/cat/gif?type=medium"
-    await ctx.send(url)
-
-"""
-Handles the meow command to display a cat image with optional text using the 'cataas' API.
-
-Args:
-    ctx: The context of the command.
-    text: Optional text to display on the cat image (default is None).
-
-Returns:
-    None
-"""
+    await handle_cat_command(ctx, "cif")
 
 
 @bot.command()
 async def meow(ctx, *, text=None):
-    if text is None:
-        url = "https://cataas.com/cat/says/hehe?fontSize=50&fontColor=violet"
-    else:
-        url = f"https://cataas.com/cat/says/{text}?fontSize=50&fontColor=violet"
-    await ctx.send(url)
+    await handle_cat_command(ctx, "meow", text)
 
 """
 Handles the safeip command to check the abuse confidence score and Tor status of an IP address using the 'abuseipdb' API.
@@ -514,6 +439,9 @@ async def timeout(ctx, time=None, *, user: discord.Member, reason=None):
 async def clone(ctx, clone_from: int, clone_to: int) -> None:
     await clone_guild(ctx, clone_from, clone_to, bot)
 
+
+# Clear before start
+# bot.http.clear()
 
 # Bot starten
 bot.run(TOKEN)
