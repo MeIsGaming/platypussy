@@ -1,5 +1,5 @@
 import asyncio
-import platy_sec as sec
+import platy_sec.sec_main as sec
 
 
 """
@@ -17,11 +17,11 @@ async def handle_ping(ctx, bot, BANNED_GUILDS):
     if str(ctx.guild.id) not in BANNED_GUILDS:
         calc = round(bot.latency * 1000, 1)
         await ctx.send(f"Pong! {calc}ms")
-        sec.arl(0.1)
+        sec.arl(0.1, 0)
 
 
-async def decrement_dick_counter(user_id, dick_counter):
+async def decrement_dick_counter(user_id, dick_counter, time):
     # Specify the time interval for decrementing the counter (e.g., 60 seconds)
-    await asyncio.sleep(60)
+    await asyncio.sleep(time)
     if user_id in dick_counter:
         dick_counter[user_id] -= 1

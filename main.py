@@ -1,8 +1,10 @@
 import asyncio
 import json
 import sqlite3
-import datetime
+from datetime import datetime
 import logging
+import gettext
+
 
 import discord
 import requests
@@ -28,7 +30,7 @@ from commands.clone_guild import clone_guild
 from commands.suggest import process_suggestion
 from commands.cat import handle_cat_command
 
-from functions.unmute import unmute
+from functions.handlers.voicehandler import voicehandler
 from functions.commonf import handle_ping
 
 
@@ -78,13 +80,13 @@ CREATE TABLE IF NOT EXISTS permissions (
 # Function to add a suggestion
 
 
-def add_suggestion(user, suggestion):
+""" def add_suggestion(user, suggestion):
     date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     c.execute('''
     INSERT INTO suggestions (user, suggestion, date)
     VALUES (?, ?, ?)
     ''', (user, suggestion, date))
-    conn.commit()
+    conn.commit() """
 
 # Function to add a permission
 
@@ -115,6 +117,20 @@ def get_owner():
 
 def log(logmsg):
     print(logmsg)
+
+
+def check_gift_link(link):
+    try:
+        # Send a GET request to the Discord gift link
+        if not link.startswith("https://"):
+            link = f"https://{link}"
+        response = requests.get(link)
+
+        # Check if the response is a redirect (200 OK)
+        return response.status_code == 200 and "gift" in response.text
+    except requests.exceptions.RequestException as e:
+        print(f"Error: {e}")
+        return False
 
 
 # Initialize a counter to track the number of "dick" requests per user
@@ -165,8 +181,8 @@ Returns:
 @bot.event
 @commands.has_permissions(mute_members=True)
 @commands.has_permissions(deafen_members=True)
-async def on_voice_state_update(member: discord.Member, before: any, after: any) -> None:
-    await unmute(member, before, after)
+async def on_voice_state_update(member: discord.Member, before: discord.VoiceState, after: discord.VoiceState) -> None:
+    await voicehandler(member, before, after)
 
 """
 Handles the suggest command to add a suggestion and process it.
@@ -182,9 +198,8 @@ Returns:
 
 @bot.command()
 async def suggest(ctx, *, suggestion):
-
     if str(ctx.guild.id) not in BANNED_GUILDS:
-        await add_suggestion(ctx.author.name, suggestion)
+        # await add_suggestion(ctx.author.name, suggestion)
         await process_suggestion(ctx, suggestion, SUGG_WEBHOOK_URL)
 
 
@@ -204,18 +219,23 @@ Returns:
 
 @bot.event
 async def on_message(message: discord.Message):
+    owner = get_owner()
+    msg_chnl_id = message.channel.guild.id if message.channel and message.channel.guild else "Unknown"
     if re.match(r"(https://)?(discord\.(gift|com/gifts)/)[a-zA-Z0-9]+", message.content):
-        with open("nitro.txt", "a") as f:
-            f.write(message.content)
-            f.truncate()
-            f.close()
-
-    elif str(message.channel.guild.id) not in BANNED_GUILDS:
-        if message.channel.guild.id is None:
-            print(message)
+        with open("logs/nitro.txt", "a", encoding='utf-8') as f:
+            f.write(f"{message.content}\n")
+        if check_gift_link(message.content):
+            gift_msg = f"# Found valid gift Link! [UwU]({message.jump_url})\n## "
         else:
-            await bot.process_commands(message)
-    await smessage(get_owner(), STALKUSERS, message)
+            gift_msg = f"### Possible gift link:\n-# "
+        gift_msg += message.content
+        await owner.send(gift_msg)
+
+    elif str(msg_chnl_id) not in BANNED_GUILDS:
+
+        await bot.process_commands(message)
+
+    await smessage(owner, STALKUSERS, message)
 
 
 @bot.event
